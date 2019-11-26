@@ -37,6 +37,7 @@ last_reward = 0
 scores = []
 time_intervals = []
 start_time = time.clock()
+t_values = []
 
 # Initializing the map
 first_update = True
@@ -123,6 +124,7 @@ class Game(Widget):
         global longueur
         global largeur
         global start_time
+        global t_values
 
         longueur = self.width
         largeur = self.height
@@ -134,6 +136,7 @@ class Game(Widget):
         orientation = Vector(*self.car.velocity).angle((xx,yy))/180.
         last_signal = [self.car.signal1, self.car.signal2, self.car.signal3, orientation, -orientation] # signals and values to show if the car is going towards the goal or not, -orientation is added to make the DQN explore not just in one direction
         action = brain.update(last_reward, last_signal) #1 of 3 actions is selected by the DQN, IMPORTANT
+        t_values.append(brain.T)
         scores.append(brain.score()) # update the medium score
         rotation = action2rotation[action] # update the rotation according to the selected action
         self.car.move(rotation) # move the car according to the rotation
@@ -147,9 +150,9 @@ class Game(Widget):
             last_reward = -1 # the reward taken is -1 which is the worst
         else: # otherwise
             self.car.velocity = Vector(6, 0).rotate(self.car.angle)
-            last_reward = -0.05 # if car is getting away from the goal a small penalty is given
+            last_reward = -0.2 # if car is getting away from the goal a small penalty is given
             if distance < last_distance: # if its getting closer a small reward is given
-                last_reward = 0.2
+                last_reward = 0.1
 
         if self.car.x < 10:   # if the car gets closer to any edges it gets the worst reward
             self.car.x = 10
@@ -165,9 +168,9 @@ class Game(Widget):
             last_reward = -1
 
         if distance < 100: # if the goal is reached the new goal is set to the bottom right 
+            last_reward = 0.2
             goal_x = self.width-goal_x
             goal_y = self.height-goal_y
-            #last_reward = 2 #when a goal is reached gain reward
             elapsed_time = time.clock() - start_time
             print(elapsed_time)
             start_time = time.clock()
@@ -233,13 +236,11 @@ class CarApp(App):
     def save(self, obj):  # save the AI
         print("saving brain...")
         brain.save()
-        #plt.subplot(3, 1, 1)
         plt.plot(scores)
-        plt.title('Scores')
         plt.show()
-        #plt.subplot(3, 1, 3)
         plt.plot(time_intervals)
-        plt.title('Time to reach a goal')
+        plt.show()
+        plt.plot(t_values)
         plt.show()
 
     def load(self, obj): # load the Aı
